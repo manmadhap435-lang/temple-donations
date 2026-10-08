@@ -755,7 +755,7 @@ export default function App() {
         <div className="hero-image-wrapper">
 
           <img
-            src="/assets/palapolamma.jpg"
+            src="/assets/palaplamma.jpg"
             alt="Pala Polamma Thalli"
             className="main-deity"
             onError={(event) => {
