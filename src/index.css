@@ -396,6 +396,8 @@ tr:hover td {
 
 .text-center {
   text-align: center;
+  white-space: pre-wrap;
+
 }
 
 .footer-section {

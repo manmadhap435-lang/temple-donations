@@ -756,6 +756,7 @@ export default function App() {
 
           <img
             src="/assets/palaplamma.jpg"
+            //hh
             alt="Pala Polamma Thalli"
             className="main-deity"
             onError={(event) => {
