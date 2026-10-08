@@ -520,8 +520,8 @@ export default function App() {
         style={{
           display: 'flex',
           gap: '20px',
-          padding: '15px',
-          justifyContent: 'center',
+          padding: '15px 30px',
+          justifyContent: 'flex-start',
           fontSize: '0.95rem',
           color: 'var(--primary-gold)',
           fontFamily: 'Montserrat, sans-serif',
