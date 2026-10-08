@@ -12,6 +12,7 @@ interface Donation {
   amount: number | null;
   comments: string;
   donation_date: string;
+  is_edited?: boolean;
 }
 
 interface Expense {
@@ -19,6 +20,7 @@ interface Expense {
   amount: number;
   reason: string;
   expense_date: string;
+  is_edited?: boolean;
 }
 
 // ======================================================
@@ -86,6 +88,15 @@ export default function App() {
   const [eAmount, setEAmount] = useState('');
   const [eReason, setEReason] = useState('');
   const [eDate, setEDate] = useState('');
+
+  // ====================================================
+  // EDIT STATE
+  // ====================================================
+  const [editingDonationId, setEditingDonationId] = useState<string | null>(null);
+  const [editingDonationAmount, setEditingDonationAmount] = useState<string>('');
+
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [editingExpenseAmount, setEditingExpenseAmount] = useState<string>('');
 
   // ====================================================
   // INITIAL LOAD
@@ -342,6 +353,58 @@ export default function App() {
   };
 
   // ====================================================
+  // UPDATE DONATION AMOUNT
+  // ====================================================
+
+  const handleUpdateDonationAmount = async (id: string) => {
+    const val = Number.parseFloat(editingDonationAmount);
+    if (Number.isNaN(val) || val < 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('temple_donations')
+      .update({ amount: val, is_edited: true })
+      .eq('id', id);
+
+    if (error) {
+      alert('Error updating donation: ' + error.message);
+      return;
+    }
+
+    alert('Donation updated successfully');
+    setEditingDonationId(null);
+    await fetchData();
+  };
+
+  // ====================================================
+  // UPDATE EXPENSE AMOUNT
+  // ====================================================
+
+  const handleUpdateExpenseAmount = async (id: string) => {
+    const val = Number.parseFloat(editingExpenseAmount);
+    if (Number.isNaN(val) || val <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('temple_expenses')
+      .update({ amount: val, is_edited: true })
+      .eq('id', id);
+
+    if (error) {
+      alert('Error updating expense: ' + error.message);
+      return;
+    }
+
+    alert('Expense updated successfully');
+    setEditingExpenseId(null);
+    await fetchData();
+  };
+
+  // ====================================================
   // FILTER DONATIONS BY YEAR
   // ====================================================
 
@@ -466,33 +529,24 @@ export default function App() {
       >
 
         <div>
-          <strong>
-            Total Collected:
-          </strong>{' '}
-          ₹
-          {totalDonations.toLocaleString(
-            'en-IN'
-          )}
+          <strong>Total Collected:</strong>{' '}
+          <span style={{ color: '#ffffff' }}>
+            ₹{totalDonations.toLocaleString('en-IN')}
+          </span>
         </div>
 
         <div>
-          <strong>
-            Total Expenses:
-          </strong>{' '}
-          ₹
-          {totalExpenses.toLocaleString(
-            'en-IN'
-          )}
+          <strong>Total Expenses:</strong>{' '}
+          <span style={{ color: '#ffffff' }}>
+            ₹{totalExpenses.toLocaleString('en-IN')}
+          </span>
         </div>
 
         <div>
-          <strong>
-            Current Balance:
-          </strong>{' '}
-          ₹
-          {currentBalance.toLocaleString(
-            'en-IN'
-          )}
+          <strong>Current Balance:</strong>{' '}
+          <span style={{ color: '#ffffff' }}>
+            ₹{currentBalance.toLocaleString('en-IN')}
+          </span>
         </div>
 
       </div>
@@ -888,18 +942,65 @@ export default function App() {
 
                           <td
                             style={{
-                              color:
-                                'var(--primary-gold)',
-                              fontWeight:
-                                'bold',
+                              color: 'var(--primary-gold)',
+                              fontWeight: 'bold',
                             }}
                           >
-                            {donation.amount !==
-                              null
-                              ? `₹${donation.amount.toLocaleString(
-                                'en-IN'
-                              )}`
-                              : '-'}
+                            {isAdmin && editingDonationId === donation.id ? (
+                              <div style={{ display: 'flex', gap: '5px' }}>
+                                <input
+                                  type="number"
+                                  value={editingDonationAmount}
+                                  onChange={(e) => setEditingDonationAmount(e.target.value)}
+                                  style={{ width: '80px', padding: '2px 5px' }}
+                                />
+                                <button
+                                  className="btn-primary"
+                                  style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                                  onClick={() => handleUpdateDonationAmount(donation.id)}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  className="btn-secondary"
+                                  style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                                  onClick={() => setEditingDonationId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>
+                                  {donation.amount !== null
+                                    ? `₹${donation.amount.toLocaleString('en-IN')}`
+                                    : '-'}
+                                </span>
+                                {donation.is_edited && (
+                                  <small style={{ fontSize: '0.7em', color: 'var(--text-muted)' }}>
+                                    (Edited)
+                                  </small>
+                                )}
+                                {isAdmin && (
+                                  <button
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: 'var(--text-muted)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      textDecoration: 'underline'
+                                    }}
+                                    onClick={() => {
+                                      setEditingDonationId(donation.id);
+                                      setEditingDonationAmount(donation.amount ? donation.amount.toString() : '');
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </td>
 
                           <td>
@@ -1059,15 +1160,62 @@ export default function App() {
 
                         <td
                           style={{
-                            color:
-                              'var(--primary-gold)',
-                            fontWeight:
-                              'bold',
+                            color: 'var(--primary-gold)',
+                            fontWeight: 'bold',
                           }}
                         >
-                          ₹
-                          {expense.amount.toLocaleString(
-                            'en-IN'
+                          {isAdmin && editingExpenseId === expense.id ? (
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <input
+                                type="number"
+                                value={editingExpenseAmount}
+                                onChange={(e) => setEditingExpenseAmount(e.target.value)}
+                                style={{ width: '80px', padding: '2px 5px' }}
+                              />
+                              <button
+                                className="btn-primary"
+                                style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                                onClick={() => handleUpdateExpenseAmount(expense.id)}
+                              >
+                                Save
+                              </button>
+                              <button
+                                className="btn-secondary"
+                                style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                                onClick={() => setEditingExpenseId(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>
+                                ₹{expense.amount.toLocaleString('en-IN')}
+                              </span>
+                              {expense.is_edited && (
+                                <small style={{ fontSize: '0.7em', color: 'var(--text-muted)' }}>
+                                  (Edited)
+                                </small>
+                              )}
+                              {isAdmin && (
+                                <button
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    textDecoration: 'underline'
+                                  }}
+                                  onClick={() => {
+                                    setEditingExpenseId(expense.id);
+                                    setEditingExpenseAmount(expense.amount.toString());
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
 
@@ -1110,9 +1258,9 @@ export default function App() {
       <footer
         className="footer-section glass"
         style={{
-          marginTop: '40px',
-          padding: '30px',
-          borderRadius: '12px',
+          marginTop: '20px',
+          padding: '10px',
+          borderRadius: '10px',
         }}
       >
 
@@ -1126,6 +1274,11 @@ export default function App() {
           📞 6302505146
           &nbsp;|&nbsp;
           📞 9052244870
+        </p>
+
+        <p style={{ marginTop: '20px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          Copyrights © Powerstar Youth Newcolony  Ravivalasa <br></br>
+          Design & Developed by Manmadha pitta
         </p>
 
       </footer>
