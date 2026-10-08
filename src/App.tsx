@@ -1278,8 +1278,9 @@ export default function App() {
         </p>
 
         <p style={{ marginTop: '20px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Copyrights © Powerstar Youth Newcolony  Ravivalasa <br></br>
-          Design & Developed by Manmadha pitta
+          Design & Developed by Manmadha pitta <br></br>
+          Copyrights © Powerstar Youth Newcolony - Ravivalasa <br></br>
+
         </p>
 
       </footer>
