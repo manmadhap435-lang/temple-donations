@@ -1259,7 +1259,7 @@ export default function App() {
       <footer
         className="footer-section glass"
         style={{
-          marginTop: '-70px',
+          marginTop: '40px',
           padding: '10px',
           borderRadius: '10px',
         }}
