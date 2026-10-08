@@ -1259,15 +1259,20 @@ export default function App() {
       <footer
         className="footer-section glass"
         style={{
-          marginTop: '20px',
+          marginTop: '-70px',
           padding: '10px',
           borderRadius: '10px',
         }}
       >
-
         <h3 className="cinzel-font">
           Contact for Donations
         </h3>
+        <p style={{ marginTop: '5px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          Design & Developed by Manmadha pitta <br></br>
+          Copyrights © Powerstar Youth Newcolony - Ravivalasa <br></br>
+
+        </p>
+
 
         <p>
           📞 9346184327
@@ -1275,12 +1280,6 @@ export default function App() {
           📞 6302505146
           &nbsp;|&nbsp;
           📞 9052244870
-        </p>
-
-        <p style={{ marginTop: '20px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Design & Developed by Manmadha pitta <br></br>
-          Copyrights © Powerstar Youth Newcolony - Ravivalasa <br></br>
-
         </p>
 
       </footer>
