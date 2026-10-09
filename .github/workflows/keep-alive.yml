@@ -1,0 +1,19 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs every 3 days at midnight UTC to prevent Supabase from pausing
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # Allows you to run it manually from the GitHub dashboard
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          echo "Pinging Supabase to keep it active..."
+          curl -s -X GET 'https://dvhrmcgwhsrpijqxxuha.supabase.co/rest/v1/donations?select=id&limit=1' \
+          -H "apikey: sb_publishable_EaX6npYNyKddvSd-J8z4hg_KHAb0wmK" \
+          -H "Authorization: Bearer sb_publishable_EaX6npYNyKddvSd-J8z4hg_KHAb0wmK"
+          echo -e "\nPing successful!"
