@@ -237,12 +237,12 @@ export default function App() {
 
   const handleLogin = (event: React.FormEvent) => {
     event.preventDefault();
-        const validUsernames = ['janardhan', 'krishna.n'];
-  const validPassword = 'god@7431';
-  if (
-    validUsernames.includes(username.trim().toLowerCase()) &&
-    password === validPassword
-  )  {
+    const validUsernames = ['janardhan', 'krishna.n'];
+    const validPassword = 'god@7431';
+    if (
+      validUsernames.includes(username.trim().toLowerCase()) &&
+      password === validPassword
+    ) {
       setIsAdmin(true);
       setShowLogin(false);
       setUsername('');
