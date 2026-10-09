@@ -23,14 +23,70 @@ interface Expense {
   is_edited?: boolean;
 }
 
+
+// ======================================================
+// ODOMETER NUMBER ANIMATION
+// ======================================================
+
+const OdometerNumber = ({ value }: { value: number }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (start === end) return;
+
+    const duration = 1500;
+    const incrementTime = 30;
+    const steps = Math.ceil(duration / incrementTime);
+    const increment = end / steps;
+
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setDisplayValue(end);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(Math.ceil(start));
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  return <span>₹{displayValue.toLocaleString('en-IN')}</span>;
+};
+
 // ======================================================
 // QUOTES
 // ======================================================
 
 const QUOTES = [
-  'Dharma protects those who protect it.',
-  'Service to humanity is service to God.',
+
+  'రావివలస గడ్డపై కొలువైన పాలపోలమ్మ తల్లి… మా గ్రామానికి రక్షణగా, మా ప్రజలకు ఆశీర్వాదంగా, మా తరతరాల విశ్వాసానికి ప్రతీకగా ఎల్లప్పుడూ మా అందరినీ కాపాడాలి తల్లి.” 🙏 🔱',
+
+
+  'పాలపోలమ్మ తల్లి దీవెనలే మా బలం… అమ్మ కరుణే మా రక్షణ.',
+  'పాలపోలమ్మ నమ్మిన భక్తునికి భయం లేదు; దుర్గమ్మ తల్లి దీవెన ఉన్న జీవితానికి ఓటమి లేదు..',
   'Faith makes all things possible... love makes all things easy.',
+  'పాలపోలమ్మ ఆశీస్సులు ఉన్నచోట భయానికి స్థానం లేదు.',
+  'పాలపోలమ్మ కరుణ ఉంటే అసాధ్యం ఏదీ లేదు.',
+  'Service to humanity is service to God.',
+  'పాలపోలమ్మ కరుణతోనే అద్భుతాలు జరుగుతాయి..',
+  'పాలపోలమ్మ పాదాలే మా శరణు.',
+  'తల్లి ఆశీస్సులతోనే శాంతి, ఐశ్వర్యం సిద్ధిస్తాయి."',
+  'ఎన్ని కష్టాలు వచ్చినా అమ్మపై నమ్మకం ఉంటే మనసుకు ఓటమి ఉండదు. ',
+  'పాలపోలమ్మ తల్లి మా ఊరి ఆరాధ్య దైవం… మా అందరి నమ్మకానికి నిలువెత్తు రూపం.',
+  'Dharma protects those who protect it.',
+  'జై పాలపోలమ్మ తల్లి 🙏🌺',
+  'అమ్మ కరుణ మనందరికీ కొండంత అండ”',
+
+
+
+
+
+
+
 ];
 
 // ======================================================
@@ -532,21 +588,21 @@ export default function App() {
         <div>
           <strong>Total Collected:</strong>{' '}
           <span style={{ color: '#ffffff' }}>
-            ₹{totalDonations.toLocaleString('en-IN')}
+            <OdometerNumber value={totalDonations} />
           </span>
         </div>
 
         <div>
           <strong>Total Expenses:</strong>{' '}
           <span style={{ color: '#ffffff' }}>
-            ₹{totalExpenses.toLocaleString('en-IN')}
+            <OdometerNumber value={totalExpenses} />
           </span>
         </div>
 
         <div>
           <strong>Current Balance:</strong>{' '}
           <span style={{ color: '#ffffff' }}>
-            ₹{currentBalance.toLocaleString('en-IN')}
+            <OdometerNumber value={currentBalance} />
           </span>
         </div>
 
