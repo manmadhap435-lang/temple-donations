@@ -239,7 +239,7 @@ export default function App() {
     event.preventDefault();
 
     if (
-      username === 'janardhan' &&
+      username === 'janardhan' || 'krishna.n'&&
       password === 'god@7431'
     ) {
       setIsAdmin(true);
