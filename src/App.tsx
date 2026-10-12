@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabaseClient';
+import { DonateModal } from './components/DonateModal';
 import './index.css';
 
 // ======================================================
@@ -63,8 +64,6 @@ const OdometerNumber = ({ value }: { value: number }) => {
 
 const QUOTES = [
 
-  'రావివలస గడ్డపై కొలువైన పాలపోలమ్మ తల్లి… మా గ్రామానికి రక్షణగా, మా ప్రజలకు ఆశీర్వాదంగా, మా తరతరాల విశ్వాసానికి ప్రతీకగా ఎల్లప్పుడూ మా అందరినీ కాపాడాలి తల్లి.” 🙏 🔱',
-
 
   'పాలపోలమ్మ తల్లి దీవెనలే మా బలం… అమ్మ కరుణే మా రక్షణ.',
   'పాలపోలమ్మ నమ్మిన భక్తునికి భయం లేదు; దుర్గమ్మ తల్లి దీవెన ఉన్న జీవితానికి ఓటమి లేదు..',
@@ -102,6 +101,7 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showLogin, setShowLogin] = useState(false);
+  const [showDonateModal, setShowDonateModal] = useState(false);
 
   // ====================================================
   // DATA
@@ -436,6 +436,75 @@ export default function App() {
   };
 
   // ====================================================
+  // ONLINE DONATION SUBMIT & VERIFICATION
+  // ====================================================
+
+  const handleOnlineDonationSubmit = async (data: {
+    name: string;
+    amount: number;
+    comments: string;
+    date: string;
+  }): Promise<boolean> => {
+    const { error } = await supabase.from('temple_donations').insert([
+      {
+        name: data.name,
+        amount: data.amount,
+        comments: data.comments,
+        donation_date: data.date,
+      },
+    ]);
+
+    if (error) {
+      console.error('Error submitting online donation:', error);
+      alert('Error submitting donation: ' + error.message);
+      return false;
+    }
+
+    await fetchData();
+    return true;
+  };
+
+  const handleApproveDonation = async (donation: Donation) => {
+    // Strip [UPI_PENDING:UTR...] and mark as verified
+    const cleanComment = donation.comments.replace(/\[UPI_PENDING:UTR[^\]]*\]\s*/i, '').trim();
+    const verifiedComment = cleanComment ? `${cleanComment} (Verified UPI)` : 'Verified UPI';
+
+    const { error } = await supabase
+      .from('temple_donations')
+      .update({
+        comments: verifiedComment,
+      })
+      .eq('id', donation.id);
+
+    if (error) {
+      alert('Error approving donation: ' + error.message);
+      return;
+    }
+
+    alert(`Donation of ₹${donation.amount?.toLocaleString('en-IN')} by ${donation.name} approved!`);
+    await fetchData();
+  };
+
+  const handleRejectDonation = async (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this unverified donation entry?')) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('temple_donations')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Error rejecting donation: ' + error.message);
+      return;
+    }
+
+    alert('Donation removed successfully.');
+    await fetchData();
+  };
+
+  // ====================================================
   // UPDATE EXPENSE AMOUNT
   // ====================================================
 
@@ -543,7 +612,21 @@ export default function App() {
           </h1>
         </div>
 
-        <div className="auth-container">
+        <div className="auth-container" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #d4af37, #aa820a)',
+              color: '#2b0606',
+              fontWeight: 700,
+              border: 'none',
+              boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
+            }}
+            onClick={() => setShowDonateModal(true)}
+          >
+            🙏 Donate Online (విరాళం)
+          </button>
 
           {isAdmin ? (
             <button
@@ -675,6 +758,19 @@ export default function App() {
       )}
 
       {/* ==================================================
+          DONATE MODAL (UPI - DASARI LAXMANARAO)
+      ================================================== */}
+
+      <DonateModal
+        isOpen={showDonateModal}
+        onClose={() => setShowDonateModal(false)}
+        onSuccess={() => {
+          setActiveTab('donations');
+        }}
+        onDirectSubmit={handleOnlineDonationSubmit}
+      />
+
+      {/* ==================================================
           HERO
       ================================================== */}
 
@@ -804,6 +900,20 @@ export default function App() {
               Expenses
             </button>
 
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setShowDonateModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #d4af37, #f1c40f)',
+                color: '#2b0606',
+                fontWeight: 700,
+                boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
+              }}
+            >
+              🙏 Donate Now (విరాళం ఇవ్వండి)
+            </button>
+
           </div>
 
         </div>
@@ -852,34 +962,51 @@ export default function App() {
 
           <section className="donations-section fade-in">
 
-            <div className="section-header">
+            <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
 
               <h2 className="cinzel-font">
                 Our Generous Donors
               </h2>
 
-              <select
-                value={selectedYear}
-                onChange={(event) =>
-                  setSelectedYear(
-                    Number(
-                      event.target.value
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => setShowDonateModal(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #d4af37, #f1c40f)',
+                    color: '#2b0606',
+                    fontWeight: 700,
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  + Donate Online (UPI)
+                </button>
+
+                <select
+                  value={selectedYear}
+                  onChange={(event) =>
+                    setSelectedYear(
+                      Number(
+                        event.target.value
+                      )
                     )
-                  )
-                }
-                className="year-select"
-              >
+                  }
+                  className="year-select"
+                >
 
-                {years.map((year) => (
-                  <option
-                    key={year}
-                    value={year}
-                  >
-                    {year}
-                  </option>
-                ))}
+                  {years.map((year) => (
+                    <option
+                      key={year}
+                      value={year}
+                    >
+                      {year}
+                    </option>
+                  ))}
 
-              </select>
+                </select>
+              </div>
 
             </div>
 
@@ -1062,8 +1189,109 @@ export default function App() {
                           </td>
 
                           <td>
-                            {donation.comments ||
-                              '-'}
+                            {(() => {
+                              const isPending = donation.comments?.includes('[UPI_PENDING:');
+                              const utrMatch = donation.comments?.match(/\[UPI_PENDING:UTR([^\]]+)\]/i);
+                              const utr = utrMatch ? utrMatch[1] : null;
+                              const cleanComment = donation.comments
+                                ? donation.comments.replace(/\[UPI_PENDING:UTR[^\]]*\]\s*/i, '').trim()
+                                : '';
+
+                              return (
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    {isPending ? (
+                                      <span
+                                        style={{
+                                          background: 'rgba(255, 193, 7, 0.2)',
+                                          color: '#ffc107',
+                                          border: '1px solid #ffc107',
+                                          padding: '2px 8px',
+                                          borderRadius: '12px',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        ⏳ Verification Pending
+                                      </span>
+                                    ) : donation.comments?.toLowerCase().includes('verified upi') ? (
+                                      <span
+                                        style={{
+                                          background: 'rgba(46, 204, 113, 0.2)',
+                                          color: '#2ecc71',
+                                          border: '1px solid #2ecc71',
+                                          padding: '2px 8px',
+                                          borderRadius: '12px',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        ✓ Verified UPI
+                                      </span>
+                                    ) : null}
+
+                                    {utr && (
+                                      <span
+                                        style={{
+                                          fontSize: '0.78rem',
+                                          color: 'var(--text-light)',
+                                          background: 'rgba(255,255,255,0.08)',
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          letterSpacing: '0.5px',
+                                        }}
+                                      >
+                                        UTR: <strong>{utr}</strong>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {cleanComment && (
+                                    <div style={{ marginTop: isPending || utr ? '4px' : '0', color: 'var(--text-muted)' }}>
+                                      {cleanComment}
+                                    </div>
+                                  )}
+
+                                  {/* Admin Approve / Reject actions for Pending UPI */}
+                                  {isAdmin && isPending && (
+                                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleApproveDonation(donation)}
+                                        style={{
+                                          background: '#27ae60',
+                                          color: '#fff',
+                                          border: 'none',
+                                          borderRadius: '4px',
+                                          padding: '3px 8px',
+                                          fontSize: '0.75rem',
+                                          cursor: 'pointer',
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        ✓ Approve (Confirm Bank SMS)
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRejectDonation(donation.id)}
+                                        style={{
+                                          background: '#c0392b',
+                                          color: '#fff',
+                                          border: 'none',
+                                          borderRadius: '4px',
+                                          padding: '3px 8px',
+                                          fontSize: '0.75rem',
+                                          cursor: 'pointer',
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        ✗ Reject
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
 
                         </tr>
