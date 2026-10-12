@@ -66,6 +66,7 @@ const QUOTES = [
 
 
   'పాలపోలమ్మ తల్లి దీవెనలే మా బలం… అమ్మ కరుణే మా రక్షణ.',
+  '🙏 శ్రీ పాల పోలమ్మ తల్లి ఆశీస్సులు అందరిపై ఉండాలని కోరుకుంటున్నాము 🙏',
   'పాలపోలమ్మ నమ్మిన భక్తునికి భయం లేదు; దుర్గమ్మ తల్లి దీవెన ఉన్న జీవితానికి ఓటమి లేదు..',
   'Faith makes all things possible... love makes all things easy.',
   'పాలపోలమ్మ ఆశీస్సులు ఉన్నచోట భయానికి స్థానం లేదు.',
@@ -1540,35 +1541,178 @@ export default function App() {
       {/* ==================================================
           FOOTER
       ================================================== */}
-
       <footer
         className="footer-section glass"
         style={{
-          marginTop: '40px',
-          padding: '10px',
-          borderRadius: '10px',
+          marginTop: '32px',
+          padding: '18px 16px',
+          borderRadius: '14px',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          minHeight: '220px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
         }}
       >
-        <h3 className="cinzel-font">
-          Contact for Donations
+        {/* Decorative top line */}
+        <div
+          style={{
+            width: '65px',
+            height: '2px',
+            margin: '0 auto 10px',
+            borderRadius: '10px',
+            background:
+              'linear-gradient(90deg, transparent, #d4af37, transparent)',
+            flexShrink: 0,
+          }}
+        />
+
+        {/* Donation Heading */}
+        <h3
+          className="cinzel-font"
+          style={{
+            margin: '0',
+            fontSize: '1.15rem',
+            fontWeight: 700,
+            letterSpacing: '0.4px',
+            lineHeight: 1.3,
+          }}
+        >
+          🙏 Contact for Donations
         </h3>
-        <p style={{ marginTop: '5px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Design & Developed by Manmadha pitta <br></br>
-          Copyrights © Powerstar Youth Newcolony - Ravivalasa <br></br>
 
+        {/* Developer Credit */}
+        <div
+          style={{
+            marginTop: '9px',
+            fontSize: '0.78rem',
+            lineHeight: 1.3,
+            color: 'var(--text-muted)',
+          }}
+        >
+          Design & Developed by
+        </div>
+
+        {/* Developer Name */}
+        <div
+          style={{
+            display: 'inline-block',
+            alignSelf: 'center',
+            marginTop: '4px',
+            padding: '4px 13px',
+            borderRadius: '18px',
+            background:
+              'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(255,153,51,0.10))',
+            border: '1px solid rgba(212,175,55,0.40)',
+            boxShadow: '0 2px 8px rgba(212,175,55,0.10)',
+          }}
+        >
+          <span
+            style={{
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              color: '#d4af37',
+              letterSpacing: '0.3px',
+            }}
+          >
+            ✨ Manmadha Pitta
+          </span>
+        </div>
+
+        {/* Copyright */}
+        <p
+          style={{
+            margin: '10px 0 7px',
+            fontSize: '0.76rem',
+            lineHeight: 1.4,
+            color: 'var(--text-muted)',
+          }}
+        >
+          © {new Date().getFullYear()} Powerstar Youth Newcolony - Ravivalasa
         </p>
 
+        {/* Contact Numbers */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '6px',
+            marginTop: '3px',
+          }}
+        >
+          <a
+            href="tel:9346184327"
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              padding: '5px 9px',
+              borderRadius: '16px',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              fontSize: '0.76rem',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📞 9346184327
+          </a>
 
-        <p>
-          📞 9346184327
-          &nbsp;|&nbsp;
-          📞 6302505146
-          &nbsp;|&nbsp;
-          📞 9052244870
-        </p>
+          <span style={{ opacity: 0.35, fontSize: '0.75rem' }}>|</span>
 
+          <a
+            href="tel:6302505146"
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              padding: '5px 9px',
+              borderRadius: '16px',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              fontSize: '0.76rem',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📞 6302505146
+          </a>
+
+          <span style={{ opacity: 0.35, fontSize: '0.75rem' }}>|</span>
+
+          <a
+            href="tel:9052244870"
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              padding: '5px 9px',
+              borderRadius: '16px',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              fontSize: '0.76rem',
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📞 9052244870
+          </a>
+        </div>
+
+        {/* Temple Blessing */}
+        <div
+          style={{
+            marginTop: '11px',
+            fontSize: '0.72rem',
+            lineHeight: 1.4,
+            opacity: 0.68,
+            fontStyle: 'italic',
+          }}
+        >
+        </div>
       </footer>
-
     </div>
   );
 }
