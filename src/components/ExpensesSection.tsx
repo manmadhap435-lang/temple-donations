@@ -59,10 +59,6 @@ export const ExpensesSection: React.FC<ExpensesSectionProps> = ({
     });
   }, [expenses, expenseSearch, isAdmin]);
 
-  // Calculate sum of displayed expenses
-  const totalExpenseAmount = useMemo(() => {
-    return displayedExpenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
-  }, [displayedExpenses]);
 
   const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setShowScrollTop(e.currentTarget.scrollTop > 120);

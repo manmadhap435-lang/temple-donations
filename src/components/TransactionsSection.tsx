@@ -8,7 +8,7 @@ interface TransactionsSectionProps {
   setTransactionFilter: (filter: TransactionFilterType) => void;
   transactionSearch: string;
   setTransactionSearch: (search: string) => void;
-  totalVerifiedOnlineAmount: number;
+  totalVerifiedOnlineAmount?: number;
   approvedTransactionsCount: number;
   pendingTransactionsCount: number;
   rejectedTransactionsCount: number;
@@ -25,7 +25,6 @@ export const TransactionsSection: React.FC<TransactionsSectionProps> = ({
   setTransactionFilter,
   transactionSearch,
   setTransactionSearch,
-  totalVerifiedOnlineAmount,
   approvedTransactionsCount,
   pendingTransactionsCount,
   rejectedTransactionsCount,

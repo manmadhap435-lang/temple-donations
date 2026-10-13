@@ -6,7 +6,7 @@ interface HeroSectionProps {
   setActiveTab: (tab: TabType) => void;
   isAdmin: boolean;
   pendingTransactionsCount: number;
-  onOpenDonate: () => void;
+  onOpenDonate?: () => void;
   quote: string;
 }
 
@@ -15,7 +15,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   setActiveTab,
   isAdmin,
   pendingTransactionsCount,
-  onOpenDonate,
   quote,
 }) => {
   return (

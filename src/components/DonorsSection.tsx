@@ -75,10 +75,6 @@ export const DonorsSection: React.FC<DonorsSectionProps> = ({
     });
   }, [donations, donorSearch, isAdmin]);
 
-  // Calculate sum of displayed donations
-  const totalDisplayedAmount = useMemo(() => {
-    return displayedDonations.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
-  }, [displayedDonations]);
 
   const handleTableScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setShowScrollTop(e.currentTarget.scrollTop > 120);

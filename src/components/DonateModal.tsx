@@ -19,7 +19,6 @@ export const DonateModal: React.FC<DonateModalProps> = ({
   const [gotraComments, setGotraComments] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<'details' | 'verify'>('details');
 
@@ -51,22 +50,6 @@ export const DonateModal: React.FC<DonateModalProps> = ({
   }, [isOpen, upiUri]);
 
   if (!isOpen) return null;
-
-  const handleCopyUPI = () => {
-    navigator.clipboard.writeText(payeeUpi);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  const handleDownloadQR = () => {
-    if (!qrCodeUrl) return;
-    const a = document.createElement('a');
-    a.href = qrCodeUrl;
-    a.download = `SriPalaPolamma_Temple_QR_Rs_${cleanAmount}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
 
   const handleProceedToPay = (e: React.FormEvent) => {
     e.preventDefault();

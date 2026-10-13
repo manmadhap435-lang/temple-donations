@@ -19,11 +19,6 @@ import { SecretaryComplaintsPage } from '../pages/secretary/SecretaryComplaintsP
 import { SecretaryComplaintDetailPage } from '../pages/secretary/SecretaryComplaintDetailPage'
 import { SecretaryApplicationsPage } from '../pages/secretary/SecretaryApplicationsPage'
 import { PublishNotificationPage } from '../pages/secretary/PublishNotificationPage'
-import { AdminDashboard } from '../pages/admin/AdminDashboard'
-import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
-import { AdminCategoriesPage } from '../pages/admin/AdminCategoriesPage'
-import { AdminSchemesPage } from '../pages/admin/AdminSchemesPage'
-import { AdminDonationsPage } from '../pages/admin/AdminDonationsPage'
 
 export function AppRoutes() {
   return (
@@ -67,12 +62,8 @@ export function AppRoutes() {
 
       <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
         <Route element={<MainLayout />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
-          <Route path="/admin/schemes" element={<AdminSchemesPage />} />
-          <Route path="/admin/donations" element={<AdminDonationsPage />} />
-          <Route path="/admin/notifications" element={<PublishNotificationPage />} />
+          <Route path="/admin" element={<Navigate to="/" replace />} />
+          <Route path="/admin/*" element={<Navigate to="/" replace />} />
         </Route>
       </Route>
 

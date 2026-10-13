@@ -56,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {adminInfo && (
               <div
                 className="navbar-admin-indicator"
-                title={`Logged in as ${adminInfo.name} (${adminInfo.username})`}
+                title={`Logged in as ${adminInfo.name} [${adminInfo.initial}]`}
               >
                 <span className="admin-avatar-navbar">{adminInfo.initial}</span>
                 <span className="admin-name-navbar">{adminInfo.name}</span>
