@@ -170,7 +170,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({
                 Donation Amount (విరాళం మొత్తం ₹) *
               </label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                {['501', '1000', '2500', '5001', '10000'].map((preset) => (
+                {['501', '1116', '2500', '30116', '50000'].map((preset) => (
                   <button
                     key={preset}
                     type="button"
@@ -201,11 +201,11 @@ export const DonateModal: React.FC<DonateModalProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--primary-gold)', marginBottom: '5px' }}>
-                comments
+                Comments/village/MeterialDonation/Mobile_no
               </label>
               <input
                 type="text"
-                placeholder="e.g. General Donation"
+                placeholder="Tekkali/50CementBags/9553526015"
                 value={gotraComments}
                 onChange={(e) => setGotraComments(e.target.value)}
                 style={{ width: '100%' }}

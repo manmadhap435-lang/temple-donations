@@ -199,8 +199,8 @@ export const TransactionsSection: React.FC<TransactionsSectionProps> = ({
               <th style={{ width: '100px' }}>Date</th>
               <th>Devotee Name</th>
               <th style={{ width: '110px' }}>Amount</th>
-              <th>UTR / Reference</th>
-              <th>Comments / Gotram</th>
+              <th>UTR Number</th>
+              <th>Comments</th>
               <th style={{ width: '110px' }}>Status</th>
               <th style={{ width: '150px', textAlign: 'center' }}>Admin Action</th>
             </tr>
