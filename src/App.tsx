@@ -1,72 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
+import type {
+  Donation,
+  Expense,
+  TempleTransaction,
+  TabType,
+  TransactionFilterType,
+} from './types/temple';
+import { Navbar } from './components/Navbar';
+import { MiniStats } from './components/MiniStats';
+import { HeroSection } from './components/HeroSection';
+import { LoginModal } from './components/LoginModal';
 import { DonateModal } from './components/DonateModal';
-import './index.css';
+import { DonorsSection } from './components/DonorsSection';
+import { ExpensesSection } from './components/ExpensesSection';
+import { TransactionsSection } from './components/TransactionsSection';
+import { Footer } from './components/Footer';
+import { getAdminInfo } from './utils/adminHelper';
 
 // ======================================================
-// TYPES
-// ======================================================
-
-interface Donation {
-  id: string;
-  name: string;
-  amount: number | null;
-  comments: string;
-  donation_date: string;
-  is_edited?: boolean;
-}
-
-interface Expense {
-  id: string;
-  amount: number;
-  reason: string;
-  expense_date: string;
-  is_edited?: boolean;
-}
-
-
-// ======================================================
-// ODOMETER NUMBER ANIMATION
-// ======================================================
-
-const OdometerNumber = ({ value }: { value: number }) => {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const end = value;
-    if (start === end) return;
-
-    const duration = 1500;
-    const incrementTime = 30;
-    const steps = Math.ceil(duration / incrementTime);
-    const increment = end / steps;
-
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
-        setDisplayValue(end);
-        clearInterval(timer);
-      } else {
-        setDisplayValue(Math.ceil(start));
-      }
-    }, incrementTime);
-
-    return () => clearInterval(timer);
-  }, [value]);
-
-  return <span>₹{displayValue.toLocaleString('en-IN')}</span>;
-};
-
-// ======================================================
-// QUOTES
+// SACRED QUOTES
 // ======================================================
 
 const QUOTES = [
-
-
+  'నమ్మిన భక్తులను చల్లగా కాపాడే కల్పవల్లి శ్రీ పాల పోలమ్మ తల్లి 🙏🌺',
+  'Faith moves mountains; devotion to Palapolamma brings endless peace.',
+  'తల్లి పాలపోలమ్మ అనుగ్రహం ఉంటే కొండంత కష్టమైనా దూదిపింజలా ఎగిరిపోతుంది.',
+  'సర్వజన సుఖినోభవంతు - అమ్మవారి కరుణ అందరిపై సదా ఉండుగాక!',
+  'True devotion lies in pure thoughts and selfless service.',
   'పాలపోలమ్మ తల్లి దీవెనలే మా బలం… అమ్మ కరుణే మా రక్షణ.',
-  '🙏 శ్రీ పాల పోలమ్మ తల్లి ఆశీస్సులు అందరిపై ఉండాలని కోరుకుంటున్నాము 🙏',
+  'శ్రీ పాల పోలమ్మ తల్లి ఆశీస్సులు అందరిపై ఉండాలని కోరుకుంటున్నాము 🙏',
   'పాలపోలమ్మ నమ్మిన భక్తునికి భయం లేదు; దుర్గమ్మ తల్లి దీవెన ఉన్న జీవితానికి ఓటమి లేదు..',
   'Faith makes all things possible... love makes all things easy.',
   'పాలపోలమ్మ ఆశీస్సులు ఉన్నచోట భయానికి స్థానం లేదు.',
@@ -74,177 +37,165 @@ const QUOTES = [
   'Service to humanity is service to God.',
   'పాలపోలమ్మ కరుణతోనే అద్భుతాలు జరుగుతాయి..',
   'పాలపోలమ్మ పాదాలే మా శరణు.',
-  'తల్లి ఆశీస్సులతోనే శాంతి, ఐశ్వర్యం సిద్ధిస్తాయి."',
-  'ఎన్ని కష్టాలు వచ్చినా అమ్మపై నమ్మకం ఉంటే మనసుకు ఓటమి ఉండదు. ',
+  'తల్లి ఆశీస్సులతోనే శాంతి, ఐశ్వర్యం సిద్ధిస్తాయి.',
+  'ఎన్ని కష్టాలు వచ్చినా అమ్మపై నమ్మకం ఉంటే మనసుకు ఓటమి ఉండదు.',
   'పాలపోలమ్మ తల్లి మా ఊరి ఆరాధ్య దైవం… మా అందరి నమ్మకానికి నిలువెత్తు రూపం.',
   'Dharma protects those who protect it.',
   'జై పాలపోలమ్మ తల్లి 🙏🌺',
-  'అమ్మ కరుణ మనందరికీ కొండంత అండ”',
-
-
-
-
-
-
-
+  'అమ్మ కరుణ మనందరికీ కొండంత అండ.',
 ];
 
 // ======================================================
-// APPLICATION
+// MAIN APP COMPONENT
 // ======================================================
 
 export default function App() {
-  // ====================================================
-  // ADMIN LOGIN
-  // ====================================================
-
-  const [isAdmin, setIsAdmin] = useState(false);
+  // ----------------------------------------------------
+  // ADMIN AUTHENTICATION
+  // ----------------------------------------------------
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return localStorage.getItem('temple_is_admin') === 'true';
+  });
+  const [loggedInAdmin, setLoggedInAdmin] = useState<string>(() => {
+    return localStorage.getItem('temple_admin_user') || '';
+  });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showLogin, setShowLogin] = useState(false);
   const [showDonateModal, setShowDonateModal] = useState(false);
 
-  // ====================================================
-  // DATA
-  // ====================================================
-
+  // ----------------------------------------------------
+  // DATA STATES
+  // ----------------------------------------------------
   const [donations, setDonations] = useState<Donation[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [transactions, setTransactions] = useState<TempleTransaction[]>([]);
+  const [rejectedTransactions, setRejectedTransactions] = useState<TempleTransaction[]>([]);
 
-  // ====================================================
-  // NAVIGATION
-  // ====================================================
-
-  const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'donations' | 'expenses'
-  >('dashboard');
-
-  const [selectedYear, setSelectedYear] = useState<number>(
-    new Date().getFullYear()
-  );
-
-  // ====================================================
-  // QUOTE
-  // ====================================================
-
+  // ----------------------------------------------------
+  // NAVIGATION & FILTERS
+  // ----------------------------------------------------
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [transactionFilter, setTransactionFilter] = useState<TransactionFilterType>('all');
+  const [transactionSearch, setTransactionSearch] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [quoteIndex, setQuoteIndex] = useState(0);
 
-  // ====================================================
-  // DONATION FORM
-  // ====================================================
-
+  // ----------------------------------------------------
+  // ADMIN FORM STATES
+  // ----------------------------------------------------
   const [dName, setDName] = useState('');
   const [dAmount, setDAmount] = useState('');
   const [dComments, setDComments] = useState('');
   const [dDate, setDDate] = useState('');
 
-  // ====================================================
-  // EXPENSE FORM
-  // ====================================================
-
   const [eAmount, setEAmount] = useState('');
   const [eReason, setEReason] = useState('');
   const [eDate, setEDate] = useState('');
 
-  // ====================================================
-  // EDIT STATE
-  // ====================================================
+  // ----------------------------------------------------
+  // INLINE EDIT STATES
+  // ----------------------------------------------------
   const [editingDonationId, setEditingDonationId] = useState<string | null>(null);
   const [editingDonationAmount, setEditingDonationAmount] = useState<string>('');
 
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [editingExpenseAmount, setEditingExpenseAmount] = useState<string>('');
 
-  // ====================================================
-  // INITIAL LOAD
-  // ====================================================
-
+  // ----------------------------------------------------
+  // INITIAL LOAD & QUOTE INTERVAL
+  // ----------------------------------------------------
   useEffect(() => {
     void fetchData();
 
     const interval = setInterval(() => {
-      setQuoteIndex((previous) => {
-        return (previous + 1) % QUOTES.length;
-      });
+      setQuoteIndex((prev) => (prev + 1) % QUOTES.length);
     }, 5000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  // ====================================================
-  // FETCH DATA
-  // ====================================================
-
+  // ----------------------------------------------------
+  // SUPABASE DATA FETCH
+  // ----------------------------------------------------
   const fetchData = async () => {
     try {
-      // -----------------------------------------------
-      // FETCH DONATIONS
-      // -----------------------------------------------
-
-      const {
-        data: dData,
-        error: dError,
-      } = await supabase
+      // 1. Fetch Donations
+      const { data: dData, error: dError } = await supabase
         .from('temple_donations')
         .select('*')
-        .order('donation_date', {
-          ascending: false,
-        });
+        .order('donation_date', { ascending: false });
 
-      if (dError) {
-        console.error(
-          'Error fetching donations:',
-          dError
-        );
-      } else if (dData) {
-        setDonations(dData as Donation[]);
-      }
+      if (dError) console.error('Error fetching donations:', dError);
+      else if (dData) setDonations(dData as Donation[]);
 
-      // -----------------------------------------------
-      // FETCH EXPENSES
-      // -----------------------------------------------
-
-      const {
-        data: eData,
-        error: eError,
-      } = await supabase
+      // 2. Fetch Expenses
+      const { data: eData, error: eError } = await supabase
         .from('temple_expenses')
         .select('*')
-        .order('expense_date', {
-          ascending: false,
-        });
+        .order('expense_date', { ascending: false });
 
-      if (eError) {
-        console.error(
-          'Error fetching expenses:',
-          eError
-        );
-      } else if (eData) {
-        setExpenses(eData as Expense[]);
+      if (eError) console.error('Error fetching expenses:', eError);
+      else if (eData) setExpenses(eData as Expense[]);
+
+      // 3. Fetch Transactions
+      try {
+        const { data: tData, error: tError } = await supabase
+          .from('temple_transactions')
+          .select('*')
+          .order('transaction_date', { ascending: false });
+
+        if (tError) console.warn('temple_transactions table notice:', tError.message);
+        else if (tData) setTransactions(tData as TempleTransaction[]);
+      } catch (err) {
+        console.warn('temple_transactions fetch warning:', err);
+      }
+
+      // 4. Fetch Rejected Transactions
+      try {
+        const { data: rData, error: rError } = await supabase
+          .from('temple_rejected_transactions')
+          .select('*')
+          .order('transaction_date', { ascending: false });
+
+        if (rError) console.warn('temple_rejected_transactions notice:', rError.message);
+        else if (rData) {
+          setRejectedTransactions(
+            rData.map((r: any) => ({
+              id: r.id,
+              name: r.name,
+              amount: r.amount,
+              utr_number: r.utr_number,
+              comments: r.comments || '',
+              status: 'REJECTED' as const,
+              rejection_reason: r.reason,
+              transaction_date: r.transaction_date,
+              created_at: r.created_at || r.rejected_at,
+              source: 'rejected_table' as const,
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('temple_rejected_transactions fetch warning:', err);
       }
     } catch (error) {
-      console.error(
-        'Unexpected error while fetching data:',
-        error
-      );
+      console.error('Unexpected error while fetching data:', error);
     }
   };
 
-  // ====================================================
-  // ADMIN LOGIN
-  // ====================================================
-
-  const handleLogin = (event: React.FormEvent) => {
-    event.preventDefault();
-    const validUsernames = ['janardhan', 'krishna.n'];
+  // ----------------------------------------------------
+  // ADMIN LOGIN & LOGOUT
+  // ----------------------------------------------------
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validUsernames = ['janardhan', 'krishna.n', 'eswar.m', 'raju.d'];
     const validPassword = 'god@7431';
-    if (
-      validUsernames.includes(username.trim().toLowerCase()) &&
-      password === validPassword
-    ) {
+    const cleaned = username.trim().toLowerCase();
+    if (validUsernames.includes(cleaned) && password === validPassword) {
       setIsAdmin(true);
+      setLoggedInAdmin(cleaned);
+      localStorage.setItem('temple_is_admin', 'true');
+      localStorage.setItem('temple_admin_user', cleaned);
       setShowLogin(false);
       setUsername('');
       setPassword('');
@@ -253,167 +204,112 @@ export default function App() {
     }
   };
 
-  // ====================================================
-  // ADMIN LOGOUT
-  // ====================================================
-
   const handleLogout = () => {
     setIsAdmin(false);
+    setLoggedInAdmin('');
+    localStorage.removeItem('temple_is_admin');
+    localStorage.removeItem('temple_admin_user');
     setUsername('');
     setPassword('');
+    if (activeTab === 'transactions') {
+      setActiveTab('dashboard');
+    }
   };
 
-  // ====================================================
-  // ADD DONATION
-  // ====================================================
-
-  const handleAddDonation = async (
-    event: React.FormEvent
-  ) => {
-    event.preventDefault();
-
-    // Validate donor name
+  // ----------------------------------------------------
+  // ADD DONATION (MANUAL / CASH)
+  // ----------------------------------------------------
+  const handleAddDonation = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!dName.trim()) {
       alert('Please enter donor name.');
       return;
     }
-
-    // Validate date
     if (!dDate) {
       alert('Please select donation date.');
       return;
     }
 
-    // Convert amount
-    const amount =
-      dAmount.trim() === ''
-        ? null
-        : Number.parseFloat(dAmount);
-
-    // Validate amount
-    if (
-      dAmount.trim() !== '' &&
-      (amount === null || Number.isNaN(amount) || amount < 0)
-    ) {
+    const amount = dAmount.trim() === '' ? null : Number.parseFloat(dAmount);
+    if (dAmount.trim() !== '' && (amount === null || Number.isNaN(amount) || amount < 0)) {
       alert('Please enter a valid donation amount.');
       return;
     }
 
-    // Insert donation
-    const { error } = await supabase
-      .from('temple_donations')
-      .insert([
-        {
-          name: dName.trim(),
-          amount,
-          comments: dComments.trim(),
-          donation_date: dDate,
-        },
-      ]);
+    const adminInfo = getAdminInfo(loggedInAdmin);
+    const notation = `[${adminInfo.initial}]`;
+    const finalComments = dComments.trim()
+      ? `${dComments.trim()} ${notation}`
+      : notation;
+
+    const { error } = await supabase.from('temple_donations').insert([
+      {
+        name: dName.trim(),
+        amount,
+        comments: finalComments,
+        donation_date: dDate,
+      },
+    ]);
 
     if (error) {
-      console.error(
-        'Error adding donation:',
-        error
-      );
-
-      alert(
-        'Error adding donation: ' +
-        error.message
-      );
-
+      alert('Error adding donation: ' + error.message);
       return;
     }
 
     alert('Donation added successfully');
-
-    // Clear form
     setDName('');
     setDAmount('');
     setDComments('');
     setDDate('');
-
-    // Refresh data
     await fetchData();
   };
 
-  // ====================================================
+  // ----------------------------------------------------
   // ADD EXPENSE
-  // ====================================================
-
-  const handleAddExpense = async (
-    event: React.FormEvent
-  ) => {
-    event.preventDefault();
-
-    // Validate amount
-    if (!eAmount.trim()) {
-      alert('Please enter expense amount.');
-      return;
-    }
-
+  // ----------------------------------------------------
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
     const amount = Number.parseFloat(eAmount);
-
-    if (
-      Number.isNaN(amount) ||
-      amount <= 0
-    ) {
+    if (Number.isNaN(amount) || amount <= 0) {
       alert('Please enter a valid expense amount.');
       return;
     }
-
-    // Validate reason
     if (!eReason.trim()) {
-      alert('Please enter expense reason.');
+      alert('Please enter reason for expense.');
       return;
     }
-
-    // Validate date
     if (!eDate) {
       alert('Please select expense date.');
       return;
     }
 
-    // Insert expense
-    const { error } = await supabase
-      .from('temple_expenses')
-      .insert([
-        {
-          amount,
-          reason: eReason.trim(),
-          expense_date: eDate,
-        },
-      ]);
+    const adminInfo = getAdminInfo(loggedInAdmin);
+    const notation = `[${adminInfo.initial}]`;
+    const finalReason = `${eReason.trim()} ${notation}`;
+
+    const { error } = await supabase.from('temple_expenses').insert([
+      {
+        amount,
+        reason: finalReason,
+        expense_date: eDate,
+      },
+    ]);
 
     if (error) {
-      console.error(
-        'Error adding expense:',
-        error
-      );
-
-      alert(
-        'Error adding expense: ' +
-        error.message
-      );
-
+      alert('Error adding expense: ' + error.message);
       return;
     }
 
     alert('Expense added successfully');
-
-    // Clear form
     setEAmount('');
     setEReason('');
     setEDate('');
-
-    // Refresh data
     await fetchData();
   };
 
-  // ====================================================
-  // UPDATE DONATION AMOUNT
-  // ====================================================
-
+  // ----------------------------------------------------
+  // INLINE UPDATES
+  // ----------------------------------------------------
   const handleUpdateDonationAmount = async (id: string) => {
     const val = Number.parseFloat(editingDonationAmount);
     if (Number.isNaN(val) || val < 0) {
@@ -435,79 +331,6 @@ export default function App() {
     setEditingDonationId(null);
     await fetchData();
   };
-
-  // ====================================================
-  // ONLINE DONATION SUBMIT & VERIFICATION
-  // ====================================================
-
-  const handleOnlineDonationSubmit = async (data: {
-    name: string;
-    amount: number;
-    comments: string;
-    date: string;
-  }): Promise<boolean> => {
-    const { error } = await supabase.from('temple_donations').insert([
-      {
-        name: data.name,
-        amount: data.amount,
-        comments: data.comments,
-        donation_date: data.date,
-      },
-    ]);
-
-    if (error) {
-      console.error('Error submitting online donation:', error);
-      alert('Error submitting donation: ' + error.message);
-      return false;
-    }
-
-    await fetchData();
-    return true;
-  };
-
-  const handleApproveDonation = async (donation: Donation) => {
-    // Strip [UPI_PENDING:UTR...] and mark as verified
-    const cleanComment = donation.comments.replace(/\[UPI_PENDING:UTR[^\]]*\]\s*/i, '').trim();
-    const verifiedComment = cleanComment ? `${cleanComment} (Verified UPI)` : 'Verified UPI';
-
-    const { error } = await supabase
-      .from('temple_donations')
-      .update({
-        comments: verifiedComment,
-      })
-      .eq('id', donation.id);
-
-    if (error) {
-      alert('Error approving donation: ' + error.message);
-      return;
-    }
-
-    alert(`Donation of ₹${donation.amount?.toLocaleString('en-IN')} by ${donation.name} approved!`);
-    await fetchData();
-  };
-
-  const handleRejectDonation = async (id: string) => {
-    if (!window.confirm('Are you sure you want to remove this unverified donation entry?')) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from('temple_donations')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert('Error rejecting donation: ' + error.message);
-      return;
-    }
-
-    alert('Donation removed successfully.');
-    await fetchData();
-  };
-
-  // ====================================================
-  // UPDATE EXPENSE AMOUNT
-  // ====================================================
 
   const handleUpdateExpenseAmount = async (id: string) => {
     const val = Number.parseFloat(editingExpenseAmount);
@@ -531,1188 +354,446 @@ export default function App() {
     await fetchData();
   };
 
-  // ====================================================
-  // FILTER DONATIONS BY YEAR
-  // ====================================================
+  // ----------------------------------------------------
+  // ONLINE UPI DONATION SUBMISSION
+  // ----------------------------------------------------
+  const handleOnlineDonationSubmit = async (data: {
+    name: string;
+    amount: number;
+    comments: string;
+    date: string;
+  }): Promise<boolean> => {
+    const utrMatch = data.comments.match(/\[UPI_PENDING:UTR([^\]]+)\]/i);
+    const cleanUtr = utrMatch ? utrMatch[1].trim() : '';
+    const cleanComment = data.comments.replace(/\[UPI_PENDING:UTR[^\]]*\]\s*/i, '').trim();
+
+    const { error: txError } = await supabase.from('temple_transactions').insert([
+      {
+        name: data.name.trim(),
+        amount: data.amount,
+        utr_number: cleanUtr || `TXN-${Date.now()}`,
+        comments: cleanComment,
+        status: 'PENDING',
+        transaction_date: data.date,
+      },
+    ]);
+
+    if (txError) {
+      console.warn('temple_transactions insert notice:', txError.message);
+      if (
+        txError.message.toLowerCase().includes('unique') ||
+        txError.message.toLowerCase().includes('duplicate')
+      ) {
+        alert('⚠️ ఈ 12-అంకెల UTR నంబరుతో లావాదేవీ ఇప్పటికే నమోదైంది (This UTR Number has already been submitted).');
+        return false;
+      }
+
+      // Fallback: save in temple_donations if transactions table not yet initialized
+      const { error: dError } = await supabase.from('temple_donations').insert([
+        {
+          name: data.name,
+          amount: data.amount,
+          comments: data.comments,
+          donation_date: data.date,
+        },
+      ]);
+      if (dError) {
+        console.error('Error submitting online donation:', dError);
+        alert('Error submitting donation: ' + dError.message);
+        return false;
+      }
+    }
+
+    await fetchData();
+    return true;
+  };
+
+  // ----------------------------------------------------
+  // TRANSACTION MANAGEMENT (ADMIN ONLY)
+  // ----------------------------------------------------
+  const handleApproveTransaction = async (tx: TempleTransaction) => {
+    if (tx.source !== 'legacy_donations') {
+      const { error: txErr } = await supabase
+        .from('temple_transactions')
+        .update({
+          status: 'APPROVED',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', tx.id);
+      if (txErr) console.warn('temple_transactions update:', txErr.message);
+    }
+
+    const adminInfo = getAdminInfo(loggedInAdmin);
+    const notation = `[${adminInfo.initial}]`;
+
+    const verifiedComment = tx.utr_number
+      ? `${tx.comments ? `${tx.comments} ` : ''}(Verified UPI: UTR ${tx.utr_number}) ${notation}`.trim()
+      : `${tx.comments ? `${tx.comments} ` : ''}(Verified UPI) ${notation}`.trim();
+
+    if (tx.source === 'legacy_donations') {
+      const { error } = await supabase
+        .from('temple_donations')
+        .update({
+          comments: `[UPI_APPROVED:UTR${tx.utr_number}] ${verifiedComment}`,
+        })
+        .eq('id', tx.id);
+      if (error) alert('Error: ' + error.message);
+    } else {
+      const { error: insertErr } = await supabase.from('temple_donations').insert([
+        {
+          name: tx.name,
+          amount: tx.amount,
+          comments: verifiedComment,
+          donation_date: tx.transaction_date,
+        },
+      ]);
+      if (insertErr) console.warn('temple_donations insert:', insertErr.message);
+    }
+
+    alert(`✓ Transaction of ₹${tx.amount?.toLocaleString('en-IN')} by ${tx.name} APPROVED!\nIt is now listed in the official Donors list and added to Total Collected balance.`);
+    await fetchData();
+  };
+
+  const handleRejectTransaction = async (tx: TempleTransaction) => {
+    const reason = window.prompt(
+      'Enter rejection reason (e.g. Bank statement mismatch / UTR not found / Invalid amount):',
+      'Bank statement mismatch / Payment not received'
+    );
+    if (reason === null) return; // Admin cancelled
+
+    // 1. Insert into dedicated temple_rejected_transactions table
+    try {
+      const { error: rErr } = await supabase.from('temple_rejected_transactions').insert([
+        {
+          name: tx.name,
+          amount: tx.amount,
+          utr_number: tx.utr_number || `REJ-${Date.now()}`,
+          reason: reason.trim(),
+          comments: tx.comments || '',
+          transaction_date: tx.transaction_date,
+          rejected_by: loggedInAdmin || 'admin',
+        },
+      ]);
+      if (rErr) console.warn('temple_rejected_transactions insert notice:', rErr.message);
+    } catch (err) {
+      console.warn('temple_rejected_transactions insert error:', err);
+    }
+
+    // 2. Update temple_transactions status if available
+    if (tx.source !== 'legacy_donations') {
+      await supabase
+        .from('temple_transactions')
+        .update({
+          status: 'REJECTED',
+          rejection_reason: reason.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', tx.id);
+    }
+
+    // 3. Update legacy donations if applicable
+    if (tx.source === 'legacy_donations') {
+      await supabase
+        .from('temple_donations')
+        .update({
+          comments: `[UPI_REJECTED:UTR${tx.utr_number}] ${tx.comments} (Rejected: ${reason.trim()})`,
+        })
+        .eq('id', tx.id);
+    }
+
+    alert(`✗ Transaction of ₹${tx.amount?.toLocaleString('en-IN')} marked as REJECTED and saved to rejected transactions table.`);
+    await fetchData();
+  };
+
+  const handleDeleteTransaction = async (tx: TempleTransaction) => {
+    if (!window.confirm('Are you sure you want to permanently delete this transaction from the database? This cannot be undone.')) {
+      return;
+    }
+
+    if (tx.source === 'legacy_donations') {
+      await supabase.from('temple_donations').delete().eq('id', tx.id);
+    } else if (tx.source === 'rejected_table') {
+      await supabase.from('temple_rejected_transactions').delete().eq('id', tx.id);
+    } else {
+      await supabase.from('temple_transactions').delete().eq('id', tx.id);
+      if (tx.utr_number) {
+        await supabase.from('temple_rejected_transactions').delete().eq('utr_number', tx.utr_number);
+      }
+    }
+
+    alert('Transaction permanently removed.');
+    await fetchData();
+  };
+
+  // ----------------------------------------------------
+  // COMPUTED VALUES (MEMOS)
+  // ----------------------------------------------------
+  const allTransactions = useMemo(() => {
+    const list: TempleTransaction[] = [];
+    const seenUtrs = new Set<string>();
+
+    // 1. From temple_transactions table
+    transactions.forEach((tx) => {
+      const utr = tx.utr_number ? tx.utr_number.trim() : '';
+      if (utr) seenUtrs.add(utr.toLowerCase());
+      list.push({ ...tx, source: 'transactions_table' });
+    });
+
+    // 2. From legacy temple_donations if has UPI tags
+    donations.forEach((d) => {
+      const isPending = Boolean(d.comments?.includes('[UPI_PENDING:'));
+      const isRejected = Boolean(d.comments?.includes('[UPI_REJECTED:'));
+      const isApprovedTag = Boolean(d.comments?.includes('[UPI_APPROVED:'));
+      const isVerifiedText = Boolean(d.comments?.toLowerCase().includes('verified upi'));
+
+      const utrMatch =
+        d.comments?.match(/\[UPI_(?:PENDING|REJECTED|APPROVED):UTR([^\]]+)\]/i) ||
+        d.comments?.match(/UTR[:\s]*([a-zA-Z0-9]+)/i);
+      const utr = utrMatch ? utrMatch[1].trim() : '';
+
+      const isOnline = isPending || isRejected || isApprovedTag || isVerifiedText || Boolean(utr);
+      if (!isOnline) return;
+      if (utr && seenUtrs.has(utr.toLowerCase())) return;
+
+      let status: 'PENDING' | 'APPROVED' | 'REJECTED' = 'APPROVED';
+      if (isPending) status = 'PENDING';
+      else if (isRejected) status = 'REJECTED';
+      else if (isApprovedTag || isVerifiedText) status = 'APPROVED';
+
+      const cleanComment = d.comments
+        ? d.comments
+          .replace(/\[UPI_(?:PENDING|REJECTED|APPROVED):UTR[^\]]*\]\s*/gi, '')
+          .replace(/\(Verified UPI[^)]*\)/gi, '')
+          .replace(/\(Rejected:[^)]*\)/gi, '')
+          .trim()
+        : '';
+
+      const rejectionMatch = d.comments?.match(/\(Rejected:\s*([^)]+)\)/i);
+      const rejectionReason = rejectionMatch ? rejectionMatch[1].trim() : undefined;
+
+      list.push({
+        id: d.id,
+        name: d.name,
+        amount: d.amount,
+        utr_number: utr,
+        comments: cleanComment,
+        status,
+        rejection_reason: rejectionReason,
+        transaction_date: d.donation_date,
+        source: 'legacy_donations',
+      });
+    });
+
+    // 3. From temple_rejected_transactions table
+    rejectedTransactions.forEach((rtx) => {
+      const utr = rtx.utr_number ? rtx.utr_number.trim() : '';
+      if (utr && seenUtrs.has(utr.toLowerCase())) return;
+      if (utr) seenUtrs.add(utr.toLowerCase());
+      list.push(rtx);
+    });
+
+    return list.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+  }, [transactions, donations, rejectedTransactions]);
+
+  const pendingTransactionsCount = useMemo(() => {
+    return allTransactions.filter((t) => t.status === 'PENDING').length;
+  }, [allTransactions]);
+
+  const approvedTransactionsCount = useMemo(() => {
+    return allTransactions.filter((t) => t.status === 'APPROVED').length;
+  }, [allTransactions]);
+
+  const rejectedTransactionsCount = useMemo(() => {
+    return allTransactions.filter((t) => t.status === 'REJECTED').length;
+  }, [allTransactions]);
+
+  const totalVerifiedOnlineAmount = useMemo(() => {
+    return allTransactions
+      .filter((t) => t.status === 'APPROVED')
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+  }, [allTransactions]);
+
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter((t) => {
+      if (transactionFilter === 'pending' && t.status !== 'PENDING') return false;
+      if (transactionFilter === 'approved' && t.status !== 'APPROVED') return false;
+      if (transactionFilter === 'rejected' && t.status !== 'REJECTED') return false;
+
+      if (transactionSearch.trim()) {
+        const query = transactionSearch.toLowerCase();
+        const matchesName = t.name.toLowerCase().includes(query);
+        const matchesUtr = (t.utr_number || '').toLowerCase().includes(query);
+        const matchesComment = (t.comments || '').toLowerCase().includes(query);
+        const matchesAmount = (t.amount || '').toString().includes(query);
+        if (!matchesName && !matchesUtr && !matchesComment && !matchesAmount) return false;
+      }
+      return true;
+    });
+  }, [allTransactions, transactionFilter, transactionSearch]);
 
   const filteredDonations = useMemo(() => {
     return donations.filter((donation) => {
-      return (
-        new Date(
-          donation.donation_date
-        ).getFullYear() === selectedYear
-      );
+      const isPending = donation.comments?.includes('[UPI_PENDING:');
+      const isRejected = donation.comments?.includes('[UPI_REJECTED:');
+      if (isPending || isRejected) return false;
+      return new Date(donation.donation_date).getFullYear() === selectedYear;
     });
   }, [donations, selectedYear]);
 
-  // ====================================================
-  // TOTAL DONATIONS
-  // ====================================================
-
   const totalDonations = useMemo(() => {
     return donations.reduce((total, donation) => {
+      const isPending = donation.comments?.includes('[UPI_PENDING:');
+      const isRejected = donation.comments?.includes('[UPI_REJECTED:');
+      if (isPending || isRejected) return total;
       return total + (donation.amount || 0);
     }, 0);
   }, [donations]);
 
-  // ====================================================
-  // TOTAL EXPENSES
-  // ====================================================
-
   const totalExpenses = useMemo(() => {
-    return expenses.reduce((total, expense) => {
-      return total + (expense.amount || 0);
-    }, 0);
+    return expenses.reduce((total, expense) => total + (expense.amount || 0), 0);
   }, [expenses]);
 
-  // ====================================================
-  // CURRENT BALANCE
-  // ====================================================
-
-  const currentBalance =
-    totalDonations - totalExpenses;
-
-  // ====================================================
-  // YEARS
-  // ====================================================
+  const currentBalance = totalDonations - totalExpenses;
 
   const years = useMemo(() => {
     const yearSet = new Set<number>();
-
     donations.forEach((donation) => {
-      yearSet.add(
-        new Date(
-          donation.donation_date
-        ).getFullYear()
-      );
+      yearSet.add(new Date(donation.donation_date).getFullYear());
     });
-
     yearSet.add(new Date().getFullYear());
-
-    return Array.from(yearSet).sort(
-      (a, b) => b - a
-    );
+    return Array.from(yearSet).sort((a, b) => b - a);
   }, [donations]);
 
-  // ====================================================
-  // RENDER
-  // ====================================================
-
+  // ----------------------------------------------------
+  // RENDER APP
+  // ----------------------------------------------------
   return (
     <div className="app-container">
+      {/* 1. Top Navbar */}
+      <Navbar
+        isAdmin={isAdmin}
+        loggedInAdmin={loggedInAdmin}
+        onOpenLogin={() => setShowLogin(true)}
+        onLogout={handleLogout}
+        onOpenDonate={() => setShowDonateModal(true)}
+      />
 
-      {/* ==================================================
-          TOP BAR
-      ================================================== */}
+      {/* 2. Mini Statistics Header */}
+      <MiniStats
+        totalDonations={totalDonations}
+        totalExpenses={totalExpenses}
+        currentBalance={currentBalance}
+      />
 
-      <nav className="topbar">
+      {/* 3. Login Modal */}
+      <LoginModal
+        isOpen={showLogin && !isAdmin}
+        username={username}
+        setUsername={setUsername}
+        password={password}
+        setPassword={setPassword}
+        onSubmit={handleLogin}
+        onClose={() => setShowLogin(false)}
+      />
 
-        <div className="logo-container">
-          <h1 className="temple-title-small">
-            PALA POLAMMA THALLI
-          </h1>
-        </div>
-
-        <div className="auth-container" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            type="button"
-            className="btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #d4af37, #aa820a)',
-              color: '#2b0606',
-              fontWeight: 700,
-              border: 'none',
-              boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
-            }}
-            onClick={() => setShowDonateModal(true)}
-          >
-            🙏 Donate Online (విరాళం)
-          </button>
-
-          {isAdmin ? (
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleLogout}
-            >
-              Logout Admin
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() =>
-                setShowLogin(true)
-              }
-            >
-              Admin Login
-            </button>
-          )}
-
-        </div>
-      </nav>
-
-      {/* ==================================================
-          MINI STATISTICS
-      ================================================== */}
-
-      <div
-        className="mini-stats"
-        style={{
-          display: 'flex',
-          gap: '20px',
-          padding: '15px 30px',
-          justifyContent: 'flex-start',
-          fontSize: '0.95rem',
-          color: 'var(--primary-gold)',
-          fontFamily: 'Montserrat, sans-serif',
-          flexWrap: 'wrap',
-        }}
-      >
-
-        <div>
-          <strong>Total Collected:</strong>{' '}
-          <span style={{ color: '#ffffff' }}>
-            <OdometerNumber value={totalDonations} />
-          </span>
-        </div>
-
-        <div>
-          <strong>Total Expenses:</strong>{' '}
-          <span style={{ color: '#ffffff' }}>
-            <OdometerNumber value={totalExpenses} />
-          </span>
-        </div>
-
-        <div>
-          <strong>Current Balance:</strong>{' '}
-          <span style={{ color: '#ffffff' }}>
-            <OdometerNumber value={currentBalance} />
-          </span>
-        </div>
-
-      </div>
-
-      {/* ==================================================
-          LOGIN MODAL
-      ================================================== */}
-
-      {showLogin && !isAdmin && (
-        <div className="modal-overlay">
-
-          <div className="modal glass">
-
-            <h2>Admin Login</h2>
-
-            <form onSubmit={handleLogin}>
-
-              <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(event) =>
-                  setUsername(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(event) =>
-                  setPassword(
-                    event.target.value
-                  )
-                }
-                required
-              />
-
-              <div className="modal-actions">
-
-                <button
-                  type="submit"
-                  className="btn-primary"
-                >
-                  Login
-                </button>
-
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() =>
-                    setShowLogin(false)
-                  }
-                >
-                  Cancel
-                </button>
-
-              </div>
-
-            </form>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ==================================================
-          DONATE MODAL (UPI - DASARI LAXMANARAO)
-      ================================================== */}
-
+      {/* 4. Donate Modal (UPI Apps, QR Code, Gallery Save) */}
       <DonateModal
         isOpen={showDonateModal}
         onClose={() => setShowDonateModal(false)}
         onSuccess={() => {
-          setActiveTab('donations');
+          if (isAdmin) {
+            setActiveTab('transactions');
+          } else {
+            setActiveTab('donations');
+          }
         }}
         onDirectSubmit={handleOnlineDonationSubmit}
       />
 
-      {/* ==================================================
-          HERO
-      ================================================== */}
-
-      <header className="hero-section">
-
-        <div className="hero-content">
-
-          <div className="hero-subtitle">
-
-            <span className="om-symbol cinzel-font">
-              ॐ
-            </span>{' '}
-
-            OM SRI PALA POLAMMA THALLI
-
-          </div>
-
-
-          <div className="hero-location cinzel-font">
-            — RAVIVALASA, ANDHRA PRADESH —
-          </div>
-
-          <p className="hero-description">
-
-            Seek the Divine Blessings of Goddess
-            Pala Polamma Thalli.
-
-            <br />
-            <br />
-
-            Visit the sacred temple in Ravivalasa
-            and experience the divine presence,
-            spiritual traditions, and timeless
-            heritage.
-
-            <br />
-            <br />
-
-            <strong
-              style={{
-                color:
-                  'var(--primary-gold)',
-              }}
-            >
-              "{QUOTES[quoteIndex]}"
-            </strong>
-
-          </p>
-
-          {/* Navigation Buttons */}
-
-          <div
-            className="hero-actions"
-            style={{
-              display: 'flex',
-              gap: '15px',
-              flexWrap: 'wrap',
-            }}
-          >
-
-            <button
-              type="button"
-              className={`btn-primary ${activeTab === 'dashboard'
-                ? 'active'
-                : ''
-                }`}
-              onClick={() =>
-                setActiveTab('dashboard')
-              }
-              style={
-                activeTab === 'dashboard'
-                  ? {
-                    background:
-                      'var(--primary-gold)',
-                    color:
-                      'var(--bg-dark-maroon)',
-                  }
-                  : undefined
-              }
-            >
-              Dashboard
-            </button>
-
-            <button
-              type="button"
-              className={`btn-primary ${activeTab === 'donations'
-                ? 'active'
-                : ''
-                }`}
-              onClick={() =>
-                setActiveTab('donations')
-              }
-              style={
-                activeTab === 'donations'
-                  ? {
-                    background:
-                      'var(--primary-gold)',
-                    color:
-                      'var(--bg-dark-maroon)',
-                  }
-                  : undefined
-              }
-            >
-              Donors
-            </button>
-
-            <button
-              type="button"
-              className={`btn-primary ${activeTab === 'expenses'
-                ? 'active'
-                : ''
-                }`}
-              onClick={() =>
-                setActiveTab('expenses')
-              }
-              style={
-                activeTab === 'expenses'
-                  ? {
-                    background:
-                      'var(--primary-gold)',
-                    color:
-                      'var(--bg-dark-maroon)',
-                  }
-                  : undefined
-              }
-            >
-              Expenses
-            </button>
-
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setShowDonateModal(true)}
-              style={{
-                background: 'linear-gradient(135deg, #d4af37, #f1c40f)',
-                color: '#2b0606',
-                fontWeight: 700,
-                boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
-              }}
-            >
-              🙏 Donate Now (విరాళం ఇవ్వండి)
-            </button>
-
-          </div>
-
-        </div>
-
-        {/* Temple Image */}
-
-        <div className="hero-image-wrapper">
-
-          <img
-            src="/assets/palaplamma.jpg"
-            alt="Pala Polamma Thalli"
-            className="main-deity"
-            onError={(event) => {
-              event.currentTarget.src =
-                'https://via.placeholder.com/400x600/3a0a0a/d4af37?text=Palapolamma+Thalli';
-            }}
-          />
-
-        </div>
-
-      </header>
-
-      {/* ==================================================
-          MAIN CONTENT
-      ================================================== */}
-
-      <main
-        className="main-content glass"
-        style={
-          activeTab === 'dashboard'
-            ? {
-              display: 'none',
-            }
-            : {
-              padding: '30px',
-              marginTop: '20px',
-            }
-        }
-      >
-
-        {/* ==================================================
-            DONATIONS
-        ================================================== */}
-
-        {activeTab === 'donations' && (
-
-          <section className="donations-section fade-in">
-
-            <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-
-              <h2 className="cinzel-font">
-                Our Generous Donors
-              </h2>
-
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => setShowDonateModal(true)}
-                  style={{
-                    background: 'linear-gradient(135deg, #d4af37, #f1c40f)',
-                    color: '#2b0606',
-                    fontWeight: 700,
-                    padding: '8px 16px',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  + Donate Online (UPI)
-                </button>
-
-                <select
-                  value={selectedYear}
-                  onChange={(event) =>
-                    setSelectedYear(
-                      Number(
-                        event.target.value
-                      )
-                    )
-                  }
-                  className="year-select"
-                >
-
-                  {years.map((year) => (
-                    <option
-                      key={year}
-                      value={year}
-                    >
-                      {year}
-                    </option>
-                  ))}
-
-                </select>
-              </div>
-
-            </div>
-
-            {/* Admin Donation Form */}
-
-            {isAdmin && (
-
-              <div className="admin-form glass">
-
-                <h3>
-                  Add New Donation
-                </h3>
-
-                <form
-                  onSubmit={
-                    handleAddDonation
-                  }
-                >
-
-                  <input
-                    type="text"
-                    placeholder="Donor Name"
-                    value={dName}
-                    onChange={(event) =>
-                      setDName(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-
-                  <input
-                    type="number"
-                    placeholder="Amount (Leave empty if none)"
-                    value={dAmount}
-                    onChange={(event) =>
-                      setDAmount(
-                        event.target.value
-                      )
-                    }
-                    min="0"
-                    step="0.01"
-                  />
-
-                  <input
-                    type="text"
-                    placeholder="Comments (e.g. Construction Materials)"
-                    value={dComments}
-                    onChange={(event) =>
-                      setDComments(
-                        event.target.value
-                      )
-                    }
-                  />
-
-                  <input
-                    type="date"
-                    value={dDate}
-                    onChange={(event) =>
-                      setDDate(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
-                    Submit Donation
-                  </button>
-
-                </form>
-
-              </div>
-            )}
-
-            {/* Donation Table */}
-
-            <div className="table-container">
-
-              <table>
-
-                <thead>
-
-                  <tr>
-                    <th>Date</th>
-                    <th>Name</th>
-                    <th>Amount</th>
-                    <th>Comments</th>
-                  </tr>
-
-                </thead>
-
-                <tbody>
-
-                  {filteredDonations.length > 0 ? (
-
-                    filteredDonations.map(
-                      (donation) => (
-
-                        <tr
-                          key={donation.id}
-                        >
-
-                          <td>
-                            {new Date(
-                              donation.donation_date
-                            ).toLocaleDateString(
-                              'en-IN'
-                            )}
-                          </td>
-
-                          <td>
-                            {donation.name}
-                          </td>
-
-                          <td
-                            style={{
-                              color: 'var(--primary-gold)',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            {isAdmin && editingDonationId === donation.id ? (
-                              <div style={{ display: 'flex', gap: '5px' }}>
-                                <input
-                                  type="number"
-                                  value={editingDonationAmount}
-                                  onChange={(e) => setEditingDonationAmount(e.target.value)}
-                                  style={{ width: '80px', padding: '2px 5px' }}
-                                />
-                                <button
-                                  className="btn-primary"
-                                  style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                                  onClick={() => handleUpdateDonationAmount(donation.id)}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  className="btn-secondary"
-                                  style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                                  onClick={() => setEditingDonationId(null)}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>
-                                  {donation.amount !== null
-                                    ? `₹${donation.amount.toLocaleString('en-IN')}`
-                                    : '-'}
-                                </span>
-                                {donation.is_edited && (
-                                  <small style={{ fontSize: '0.7em', color: 'var(--text-muted)' }}>
-                                    (Edited)
-                                  </small>
-                                )}
-                                {isAdmin && (
-                                  <button
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--text-muted)',
-                                      cursor: 'pointer',
-                                      fontSize: '0.8rem',
-                                      textDecoration: 'underline'
-                                    }}
-                                    onClick={() => {
-                                      setEditingDonationId(donation.id);
-                                      setEditingDonationAmount(donation.amount ? donation.amount.toString() : '');
-                                    }}
-                                  >
-                                    Edit
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          <td>
-                            {(() => {
-                              const isPending = donation.comments?.includes('[UPI_PENDING:');
-                              const utrMatch = donation.comments?.match(/\[UPI_PENDING:UTR([^\]]+)\]/i);
-                              const utr = utrMatch ? utrMatch[1] : null;
-                              const cleanComment = donation.comments
-                                ? donation.comments.replace(/\[UPI_PENDING:UTR[^\]]*\]\s*/i, '').trim()
-                                : '';
-
-                              return (
-                                <div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    {isPending ? (
-                                      <span
-                                        style={{
-                                          background: 'rgba(255, 193, 7, 0.2)',
-                                          color: '#ffc107',
-                                          border: '1px solid #ffc107',
-                                          padding: '2px 8px',
-                                          borderRadius: '12px',
-                                          fontSize: '0.75rem',
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        ⏳ Verification Pending
-                                      </span>
-                                    ) : donation.comments?.toLowerCase().includes('verified upi') ? (
-                                      <span
-                                        style={{
-                                          background: 'rgba(46, 204, 113, 0.2)',
-                                          color: '#2ecc71',
-                                          border: '1px solid #2ecc71',
-                                          padding: '2px 8px',
-                                          borderRadius: '12px',
-                                          fontSize: '0.75rem',
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        ✓ Verified UPI
-                                      </span>
-                                    ) : null}
-
-                                    {utr && (
-                                      <span
-                                        style={{
-                                          fontSize: '0.78rem',
-                                          color: 'var(--text-light)',
-                                          background: 'rgba(255,255,255,0.08)',
-                                          padding: '2px 6px',
-                                          borderRadius: '4px',
-                                          letterSpacing: '0.5px',
-                                        }}
-                                      >
-                                        UTR: <strong>{utr}</strong>
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {cleanComment && (
-                                    <div style={{ marginTop: isPending || utr ? '4px' : '0', color: 'var(--text-muted)' }}>
-                                      {cleanComment}
-                                    </div>
-                                  )}
-
-                                  {/* Admin Approve / Reject actions for Pending UPI */}
-                                  {isAdmin && isPending && (
-                                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleApproveDonation(donation)}
-                                        style={{
-                                          background: '#27ae60',
-                                          color: '#fff',
-                                          border: 'none',
-                                          borderRadius: '4px',
-                                          padding: '3px 8px',
-                                          fontSize: '0.75rem',
-                                          cursor: 'pointer',
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        ✓ Approve (Confirm Bank SMS)
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRejectDonation(donation.id)}
-                                        style={{
-                                          background: '#c0392b',
-                                          color: '#fff',
-                                          border: 'none',
-                                          borderRadius: '4px',
-                                          padding: '3px 8px',
-                                          fontSize: '0.75rem',
-                                          cursor: 'pointer',
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        ✗ Reject
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </td>
-
-                        </tr>
-
-                      )
-                    )
-
-                  ) : (
-
-                    <tr>
-
-                      <td
-                        colSpan={4}
-                        className="text-center"
-                      >
-                        No donations found
-                        for {selectedYear}
-                      </td>
-
-                    </tr>
-
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </section>
-
-        )}
-
-        {/* ==================================================
-            EXPENSES
-        ================================================== */}
-
-        {activeTab === 'expenses' && (
-
-          <section className="expenses-section fade-in">
-
-            <div className="section-header">
-
-              <h2 className="cinzel-font">
-                Temple Expenses
-              </h2>
-
-            </div>
-
-            {/* Admin Expense Form */}
-
-            {isAdmin && (
-
-              <div className="admin-form glass">
-
-                <h3>
-                  Add New Expense
-                </h3>
-
-                <form
-                  onSubmit={
-                    handleAddExpense
-                  }
-                >
-
-                  <input
-                    type="number"
-                    placeholder="Amount"
-                    value={eAmount}
-                    onChange={(event) =>
-                      setEAmount(
-                        event.target.value
-                      )
-                    }
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-
-                  <input
-                    type="text"
-                    placeholder="Reason"
-                    value={eReason}
-                    onChange={(event) =>
-                      setEReason(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-
-                  <input
-                    type="date"
-                    value={eDate}
-                    onChange={(event) =>
-                      setEDate(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
-                    Submit Expense
-                  </button>
-
-                </form>
-
-              </div>
-            )}
-
-            {/* Expense Table */}
-
-            <div className="table-container">
-
-              <table>
-
-                <thead>
-
-                  <tr>
-                    <th>Date</th>
-                    <th>Reason</th>
-                    <th>Amount</th>
-                  </tr>
-
-                </thead>
-
-                <tbody>
-
-                  {expenses.length > 0 ? (
-
-                    expenses.map((expense) => (
-
-                      <tr
-                        key={expense.id}
-                      >
-
-                        <td>
-                          {new Date(
-                            expense.expense_date
-                          ).toLocaleDateString(
-                            'en-IN'
-                          )}
-                        </td>
-
-                        <td>
-                          {expense.reason}
-                        </td>
-
-                        <td
-                          style={{
-                            color: 'var(--primary-gold)',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          {isAdmin && editingExpenseId === expense.id ? (
-                            <div style={{ display: 'flex', gap: '5px' }}>
-                              <input
-                                type="number"
-                                value={editingExpenseAmount}
-                                onChange={(e) => setEditingExpenseAmount(e.target.value)}
-                                style={{ width: '80px', padding: '2px 5px' }}
-                              />
-                              <button
-                                className="btn-primary"
-                                style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                                onClick={() => handleUpdateExpenseAmount(expense.id)}
-                              >
-                                Save
-                              </button>
-                              <button
-                                className="btn-secondary"
-                                style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                                onClick={() => setEditingExpenseId(null)}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span>
-                                ₹{expense.amount.toLocaleString('en-IN')}
-                              </span>
-                              {expense.is_edited && (
-                                <small style={{ fontSize: '0.7em', color: 'var(--text-muted)' }}>
-                                  (Edited)
-                                </small>
-                              )}
-                              {isAdmin && (
-                                <button
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--text-muted)',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    textDecoration: 'underline'
-                                  }}
-                                  onClick={() => {
-                                    setEditingExpenseId(expense.id);
-                                    setEditingExpenseAmount(expense.amount.toString());
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-
-                      </tr>
-
-                    ))
-
-                  ) : (
-
-                    <tr>
-
-                      <td
-                        colSpan={3}
-                        className="text-center"
-                      >
-                        No expenses recorded
-                        yet
-                      </td>
-
-                    </tr>
-
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </section>
-
-        )}
-
-      </main>
-
-      {/* ==================================================
-          FOOTER
-      ================================================== */}
-      <footer
-        className="footer-section glass"
-        style={{
-          marginTop: '32px',
-          padding: '18px 16px',
-          borderRadius: '14px',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-          minHeight: '220px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          boxSizing: 'border-box',
-        }}
-      >
-        {/* Decorative top line */}
-        <div
-          style={{
-            width: '65px',
-            height: '2px',
-            margin: '0 auto 10px',
-            borderRadius: '10px',
-            background:
-              'linear-gradient(90deg, transparent, #d4af37, transparent)',
-            flexShrink: 0,
-          }}
-        />
-
-        {/* Donation Heading */}
-        <h3
-          className="cinzel-font"
-          style={{
-            margin: '0',
-            fontSize: '1.15rem',
-            fontWeight: 700,
-            letterSpacing: '0.4px',
-            lineHeight: 1.3,
-          }}
-        >
-          🙏 Contact for Donations
-        </h3>
-
-        {/* Developer Credit */}
-        <div
-          style={{
-            marginTop: '9px',
-            fontSize: '0.78rem',
-            lineHeight: 1.3,
-            color: 'var(--text-muted)',
-          }}
-        >
-          Design & Developed by
-        </div>
-
-        {/* Developer Name */}
-        <div
-          style={{
-            display: 'inline-block',
-            alignSelf: 'center',
-            marginTop: '4px',
-            padding: '4px 13px',
-            borderRadius: '18px',
-            background:
-              'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(255,153,51,0.10))',
-            border: '1px solid rgba(212,175,55,0.40)',
-            boxShadow: '0 2px 8px rgba(212,175,55,0.10)',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 800,
-              fontSize: '0.92rem',
-              color: '#d4af37',
-              letterSpacing: '0.3px',
-            }}
-          >
-            ✨ Manmadha Pitta
-          </span>
-        </div>
-
-        {/* Copyright */}
-        <p
-          style={{
-            margin: '10px 0 7px',
-            fontSize: '0.76rem',
-            lineHeight: 1.4,
-            color: 'var(--text-muted)',
-          }}
-        >
-          © {new Date().getFullYear()} Powerstar Youth Newcolony - Ravivalasa
-        </p>
-
-        {/* Contact Numbers */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '6px',
-            marginTop: '3px',
-          }}
-        >
-          <a
-            href="tel:9346184327"
-            style={{
-              textDecoration: 'none',
-              color: 'inherit',
-              padding: '5px 9px',
-              borderRadius: '16px',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              fontSize: '0.76rem',
-              lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📞 9346184327
-          </a>
-
-          <span style={{ opacity: 0.35, fontSize: '0.75rem' }}>|</span>
-
-          <a
-            href="tel:6302505146"
-            style={{
-              textDecoration: 'none',
-              color: 'inherit',
-              padding: '5px 9px',
-              borderRadius: '16px',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              fontSize: '0.76rem',
-              lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📞 6302505146
-          </a>
-
-          <span style={{ opacity: 0.35, fontSize: '0.75rem' }}>|</span>
-
-          <a
-            href="tel:9052244870"
-            style={{
-              textDecoration: 'none',
-              color: 'inherit',
-              padding: '5px 9px',
-              borderRadius: '16px',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              fontSize: '0.76rem',
-              lineHeight: 1.2,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📞 9052244870
-          </a>
-        </div>
-
-        {/* Temple Blessing */}
-        <div
-          style={{
-            marginTop: '11px',
-            fontSize: '0.72rem',
-            lineHeight: 1.4,
-            opacity: 0.68,
-            fontStyle: 'italic',
-          }}
-        >
-        </div>
-      </footer>
+      {/* 5. Hero Banner & Navigation Tabs */}
+      <HeroSection
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isAdmin={isAdmin}
+        pendingTransactionsCount={pendingTransactionsCount}
+        onOpenDonate={() => setShowDonateModal(true)}
+        quote={QUOTES[quoteIndex]}
+      />
+
+      {/* 6. Active Screen Content */}
+      {activeTab !== 'dashboard' && (
+        <main className="main-content glass">
+          {activeTab === 'donations' && (
+            <DonorsSection
+              isAdmin={isAdmin}
+              loggedInAdmin={loggedInAdmin}
+              donations={filteredDonations}
+              selectedYear={selectedYear}
+              setSelectedYear={setSelectedYear}
+              years={years}
+              pendingTransactionsCount={pendingTransactionsCount}
+              onNavigateToTransactions={() => setActiveTab('transactions')}
+              onOpenDonate={() => setShowDonateModal(true)}
+              dName={dName}
+              setDName={setDName}
+              dAmount={dAmount}
+              setDAmount={setDAmount}
+              dComments={dComments}
+              setDComments={setDComments}
+              dDate={dDate}
+              setDDate={setDDate}
+              onAddDonation={handleAddDonation}
+              editingDonationId={editingDonationId}
+              setEditingDonationId={setEditingDonationId}
+              editingDonationAmount={editingDonationAmount}
+              setEditingDonationAmount={setEditingDonationAmount}
+              onUpdateDonationAmount={handleUpdateDonationAmount}
+            />
+          )}
+
+          {activeTab === 'expenses' && (
+            <ExpensesSection
+              isAdmin={isAdmin}
+              loggedInAdmin={loggedInAdmin}
+              expenses={expenses}
+              eAmount={eAmount}
+              setEAmount={setEAmount}
+              eReason={eReason}
+              setEReason={setEReason}
+              eDate={eDate}
+              setEDate={setEDate}
+              onAddExpense={handleAddExpense}
+              editingExpenseId={editingExpenseId}
+              setEditingExpenseId={setEditingExpenseId}
+              editingExpenseAmount={editingExpenseAmount}
+              setEditingExpenseAmount={setEditingExpenseAmount}
+              onUpdateExpenseAmount={handleUpdateExpenseAmount}
+            />
+          )}
+
+          {isAdmin && activeTab === 'transactions' && (
+            <TransactionsSection
+              allTransactions={allTransactions}
+              filteredTransactions={filteredTransactions}
+              transactionFilter={transactionFilter}
+              setTransactionFilter={setTransactionFilter}
+              transactionSearch={transactionSearch}
+              setTransactionSearch={setTransactionSearch}
+              totalVerifiedOnlineAmount={totalVerifiedOnlineAmount}
+              approvedTransactionsCount={approvedTransactionsCount}
+              pendingTransactionsCount={pendingTransactionsCount}
+              rejectedTransactionsCount={rejectedTransactionsCount}
+              onOpenDonate={() => setShowDonateModal(true)}
+              onApproveTransaction={handleApproveTransaction}
+              onRejectTransaction={handleRejectTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
+            />
+          )}
+        </main>
+      )}
+
+      {/* 7. Responsive Footer */}
+      <Footer />
     </div>
   );
 }

@@ -26,12 +26,14 @@ export const DonateModal: React.FC<DonateModalProps> = ({
   const payeeUpi = '9052244870-2@ibl';
   const payeeName = 'DASARI LAXMANARAO';
 
-  // Construct standard UPI URI with amount and note
-  const upiUri = `upi://pay?pa=${encodeURIComponent(payeeUpi)}&pn=${encodeURIComponent(
-    payeeName
-  )}&am=${encodeURIComponent(amount || '0')}&cu=INR&tn=${encodeURIComponent(
-    `Temple Donation - ${donorName || 'Devotee'}`
-  )}`;
+  // Construct standard UPI URIs keeping raw @ for valid VPA matching in mobile apps
+  const cleanAmount = (parseFloat(amount) || 0).toString();
+  const noteText = `Temple Donation - ${donorName.trim() || 'Devotee'}`;
+  const encodedNote = encodeURIComponent(noteText);
+  const encodedName = encodeURIComponent(payeeName);
+
+  // Standard UPI URI for QR code generation
+  const upiUri = `upi://pay?pa=${payeeUpi}&pn=${encodedName}&am=${cleanAmount}&cu=INR&tn=${encodedNote}`;
 
   useEffect(() => {
     if (isOpen) {
@@ -54,6 +56,16 @@ export const DonateModal: React.FC<DonateModalProps> = ({
     navigator.clipboard.writeText(payeeUpi);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleDownloadQR = () => {
+    if (!qrCodeUrl) return;
+    const a = document.createElement('a');
+    a.href = qrCodeUrl;
+    a.download = `SriPalaPolamma_Temple_QR_Rs_${cleanAmount}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleProceedToPay = (e: React.FormEvent) => {
@@ -254,8 +266,9 @@ export const DonateModal: React.FC<DonateModalProps> = ({
                 boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
               }}
             >
-              <div style={{ color: '#5f259f', fontWeight: 'bold', fontSize: '1rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>पे</span> PhonePe UPI Accepted Here
+              <div style={{ color: '#2b0606', fontWeight: 700, fontSize: '0.88rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#5f259f', fontWeight: 'bold', fontSize: '1rem' }}>पे</span>
+                <span>PhonePe • GPay • Paytm • BHIM</span>
               </div>
               {qrCodeUrl && (
                 <img
@@ -275,30 +288,52 @@ export const DonateModal: React.FC<DonateModalProps> = ({
               </div>
             </div>
 
-            {/* Direct Mobile UPI Pay Button */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <a
-                href={upiUri}
-                className="btn-primary"
+            {/* 100% Secure Payment via Scanner / Gallery & UPI ID */}
+            <div
+              style={{
+                background: 'rgba(212, 175, 55, 0.08)',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                border: '1px solid rgba(212, 175, 55, 0.35)',
+              }}
+            >
+              <div
                 style={{
-                  flex: 1,
-                  textAlign: 'center',
-                  textDecoration: 'none',
-                  display: 'inline-block',
-                  padding: '10px 14px',
-                  fontSize: '0.85rem',
+                  fontSize: '0.86rem',
+                  color: 'var(--primary-gold)',
+                  fontWeight: 700,
+                  marginBottom: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                📱 Pay Directly on UPI App
-              </a>
-              <button
-                type="button"
-                onClick={handleCopyUPI}
-                className="btn-secondary"
-                style={{ padding: '10px 14px', fontSize: '0.85rem' }}
+                🔒 100% సురక్షిత చెల్లింపు విధానం (Secure UPI Payment):
+              </div>
+
+              {/* Primary Action Buttons: Save QR to Gallery & Copy UPI ID */}
+
+
+              {/* Step-by-step instructions */}
+              <div
+                style={{
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.78rem',
+                  lineHeight: '1.5',
+                  color: 'var(--text-light)',
+                }}
               >
-                {copied ? '✓ Copied!' : 'Copy UPI'}
-              </button>
+
+                <ol style={{ margin: '0 0 0 16px', padding: 0 }}>
+
+                  <li>మీ <strong>PhonePe / Google Pay / Paytm</strong> యాప్ ఓపెన్ చేసి, <strong>Scan QR (📷 స్కానర్)</strong> నొక్కండి.</li>
+                  <li>స్కానర్ స్క్రీన్‌లో QR కోడ్‌తో నేరుగా పే చేయండి.</li>
+                  <li>లేదా <strong>'Copy UPI ID'</strong> ద్వారా నేరుగా UPI ID కి చెల్లించండి.</li>
+                </ol>
+
+              </div>
             </div>
 
             {/* Verification Form */}
@@ -354,3 +389,5 @@ export const DonateModal: React.FC<DonateModalProps> = ({
     </div>
   );
 };
+
+export default DonateModal;
